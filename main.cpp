@@ -91,7 +91,7 @@ int main() {
     LoadFileToMap(inFile);
 
     //ask for name of job
-    cout << "Please type in a job name to see its description(please capitalize!): " << endl;
+    cout << "\nPlease type in a job name to see its description(please capitalize!): " << endl; //Added new line for readibility(Ian)
     //todo: make all words in map lowercase
     string jobName;
     getline(cin, jobName);
