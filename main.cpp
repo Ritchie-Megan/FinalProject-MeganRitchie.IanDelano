@@ -3,8 +3,15 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <chrono>
 #include <iterator>
+#include <cctype>
+#include<bits/stdc++.h>
 using namespace std;
+using namespace chrono;
+
+
+//tuples from: https://www.kaggle.com/datasets/asaniczka/1-3m-linkedin-jobs-and-skills-2024?resource=download
 
 map<string, vector<string>> myMap;
 
@@ -26,6 +33,8 @@ void LoadFileToMap(ifstream &inFile) {
             //get the word
             string description;
             getline(inFile, description, ',');
+            //turn all words lowercase
+            transform(description.begin(), description.end(), description.begin(), ::tolower);
 
             //If there is " at the begining, we know that it is the first in the tuple, meaning it is the Job title
             if (description.find('\"') == 0) {
@@ -85,28 +94,45 @@ vector<string> getJobDescription(string &jobName) {
 }
 
 int main() {
-    //find the file and open
-    ifstream inFile("src/job_skills.csv");
-    //load into the map
-    LoadFileToMap(inFile);
+    cout << "Would you like to try Maps or Hashes to find your job(m/h)?" << endl;
+    string answer;
+    cin >> answer;
+    if (answer == "m") {
+        cout << "Retrieving Job Listings..." << endl;
+        auto start = high_resolution_clock::now();
+        //find the file and open
+        ifstream inFile("src/job_skills.csv");
+        //load into the map
+        LoadFileToMap(inFile);
 
-    //ask for name of job
-    cout << "Please type in a job name to see its description(please capitalize!): " << endl;
-    //todo: make all words in map lowercase
-    string jobName;
-    getline(cin, jobName);
-    //get corresponding vector and return, printing out the vector if it has items
-    cout << "Job requirements/benefits for " << jobName << ":" << endl;
-    vector<string> jobRequirementsBenefits = getJobDescription(jobName);
-    if (jobRequirementsBenefits.size() != 0) {
-        for (int i = 0; i < jobRequirementsBenefits.size(); i++) {
-            cout << jobRequirementsBenefits[i] << ", ";
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(stop - start);
+        cout << "Time to put into map: " << duration.count() << " seconds" << endl;
+        //reset cin so we can use it again
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        //ask for name of job
+        cout << "Please type in a job name to see its description(please capitalize!): " << endl;
+        //todo: make all words in map lowercase
+        string jobName;
+        getline(std::cin, jobName);
+        transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower);
+        //get corresponding vector and return, printing out the vector if it has items
+        cout << "Job requirements/benefits for " << jobName << ":" << endl;
+        vector<string> jobRequirementsBenefits = getJobDescription(jobName);
+        if (jobRequirementsBenefits.size() != 0) {
+            for (int i = 0; i < jobRequirementsBenefits.size(); i++) {
+                cout << jobRequirementsBenefits[i] << ", ";
+            }
+            cout << jobRequirementsBenefits[jobRequirementsBenefits.size() - 1];
+            cout << endl;
+        } else {
+            cout << "not found" << endl;
         }
-        cout << jobRequirementsBenefits[jobRequirementsBenefits.size() - 1];
-        cout << endl;
+
     }
     else {
-        cout << "not found" << endl;
+
     }
 
     return 0;
