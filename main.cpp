@@ -13,7 +13,10 @@ using namespace chrono;
 
 //tuples from: https://www.kaggle.com/datasets/asaniczka/1-3m-linkedin-jobs-and-skills-2024?resource=download
 
+//Map
 map<string, vector<string>> myMap;
+void LoadFileToMap(ifstream &inFile);
+vector<string> getJobDescription(string &jobName);
 
 void LoadFileToMap(ifstream &inFile) {
     if (inFile.is_open()) {
@@ -33,7 +36,7 @@ void LoadFileToMap(ifstream &inFile) {
             //get the word
             string description;
             getline(inFile, description, ',');
-            //turn all words lowercase
+            //turn all words lowercase: https://www.geeksforgeeks.org/conversion-whole-string-uppercase-lowercase-using-stl-c/
             transform(description.begin(), description.end(), description.begin(), ::tolower);
 
             //If there is " at the begining, we know that it is the first in the tuple, meaning it is the Job title
@@ -52,15 +55,25 @@ void LoadFileToMap(ifstream &inFile) {
                 int test = description.find("\"");
                 description = description.substr(0,test);
                 description = description.substr(1, description.size());
-                myMap[currentJob].push_back(description);
-                //cout << description << endl;
+                //check for duplicates
+                vector<string> currentListOfDescription = getJobDescription(currentJob);
+                auto iter = find(currentListOfDescription.begin(), currentListOfDescription.end(), description);
+                if (iter == currentListOfDescription.end()) {
+                    myMap[currentJob].push_back(description);
+                    //cout << description << endl;
+                }
             }
                 //else we just put in the word, eliminating the space in front of it, checking to make sure it isn't already there
             else {
-                //todo: make it check if there are duplicates
                 description = description.substr(1, description.size());
-                myMap[currentJob].push_back(description);
-                //cout << description << endl;
+
+                //check for duplicates
+                vector<string> currentListOfDescription = getJobDescription(currentJob);
+                auto iter = find(currentListOfDescription.begin(), currentListOfDescription.end(), description);
+                if (iter == currentListOfDescription.end()) {
+                    myMap[currentJob].push_back(description);
+                    //cout << description << endl;
+                }
             }
         }
         //Here you can see how many are in the set, and see how many duplicate job links there were.
@@ -97,6 +110,7 @@ int main() {
     cout << "Would you like to try Maps or Hashes to find your job(m/h)?" << endl;
     string answer;
     cin >> answer;
+
     if (answer == "m") {
         cout << "Retrieving Job Listings..." << endl;
         auto start = high_resolution_clock::now();
@@ -105,22 +119,23 @@ int main() {
         //load into the map
         LoadFileToMap(inFile);
 
+        //stop clock and report time
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(stop - start);
-        cout << "Time to put into map: " << duration.count() << " seconds" << endl;
+        cout << "Time to put into map: " << duration.count() << " microseconds" << endl;
         //reset cin so we can use it again
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         //ask for name of job
-        cout << "Please type in a job name to see its description(please capitalize!): " << endl;
-        //todo: make all words in map lowercase
+        cout << "Please type in a job name to see its description: " << endl;
         string jobName;
         getline(std::cin, jobName);
         transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower);
+
         //get corresponding vector and return, printing out the vector if it has items
         cout << "Job requirements/benefits for " << jobName << ":" << endl;
         vector<string> jobRequirementsBenefits = getJobDescription(jobName);
-        if (jobRequirementsBenefits.size() != 0) {
+        if (!jobRequirementsBenefits.empty()) {
             for (int i = 0; i < jobRequirementsBenefits.size(); i++) {
                 cout << jobRequirementsBenefits[i] << ", ";
             }
@@ -137,4 +152,3 @@ int main() {
 
     return 0;
 }
-
