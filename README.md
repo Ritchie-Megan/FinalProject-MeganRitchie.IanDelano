@@ -1,5 +1,5 @@
 <H1> COP3530 - Project 3 </h1>
-This is the template for Project 3 repositories. It includes all the assignment instructions and documentation to help you use GitHub.
+This code takes in a csv file of tuples. The tuples can be acessed from this website: https://www.kaggle.com/datasets/asaniczka/1-3m-linkedin-jobs-and-skills-2024?resource=download. We used the job_skills.csv file in order to input into the data structures. Make sure to put the csv file into a src folder int eh cmake-building-debug file for relatie pathways.
 
 <h2> Table of Contents </h2>
 
