@@ -16,6 +16,11 @@ using namespace chrono;
 map<string, vector<string>> myMap;
 unordered_map<string, vector<string>> myHashMap; // Added unordered_map
 
+// Functions
+void LoadFileToHash(ifstream &inFile);
+vector<string> getJobDescription(string &jobName);
+vector<string> getJobDescriptionFromHash(const string &jobName);
+
 // Custom hash function using polynomial rolling hash
 size_t customHash(const string &s) {
     const int p = 31; // Prime number for hashing
@@ -29,7 +34,7 @@ size_t customHash(const string &s) {
     return hashValue;
 }
 
-void LoadFileToMap(ifstream &inFile) {
+void LoadFileToHash(ifstream &inFile) {
     if (inFile.is_open()) {
         string header1, header2;
         getline(inFile, header1, ',');
@@ -39,33 +44,51 @@ void LoadFileToMap(ifstream &inFile) {
         string currentJob;
 
         while (newJobs < 100000 && getline(inFile, currentJob, ',')) {
-            transform(currentJob.begin(), currentJob.end(), currentJob.begin(), ::tolower);
-
-            if (currentJob.front() == '\"')
-                currentJob = currentJob.substr(1); // remove opening quote
-
-            auto &jobDescriptions = myMap[currentJob]; // Using myMap for now
-
+            //get the word
             string description;
             getline(inFile, description, ',');
+            //turn all words lowercase: https://www.geeksforgeeks.org/conversion-whole-string-uppercase-lowercase-using-stl-c/
             transform(description.begin(), description.end(), description.begin(), ::tolower);
 
-            if (description.back() == '\"')
-                description.pop_back(); // remove closing quote
+            //If there is " at the begining, we know that it is the first in the tuple, meaning it is the Job title
+            if (description.find('\"') == 0) {
+                //cout << "[NEW JOB]" << endl;
+                currentJob = description.substr(1, description.size());
+                newJobs++;
+                vector<string> tempVec;
+                myMap[currentJob] = tempVec;
+                description = description.substr(1, description.size());
+                //cout << description << endl;
+            }
+                // if there is a " but it isn't in the first position that means it is the last descpiptor of the job
+            else if (description.find('\"') != -1 && description.find('\"') != 0) {
+                //cout << "[END OF JOB POSTING FOUND, WEBSITE RIGHT AFTER]" << endl;
+                int test = description.find("\"");
+                description = description.substr(0,test);
+                description = description.substr(1, description.size());
+                //check for duplicates
+                vector<string> currentListOfDescription = getJobDescription(currentJob);
+                auto iter = find(currentListOfDescription.begin(), currentListOfDescription.end(), description);
+                if (iter == currentListOfDescription.end()) {
+                    myMap[currentJob].push_back(description);
+                    //cout << description << endl;
+                }
+            }
+                //else we just put in the word, eliminating the space in front of it, checking to make sure it isn't already there
+            else {
+                description = description.substr(1, description.size());
 
-            auto iter = find(jobDescriptions.begin(), jobDescriptions.end(), description);
-            if (iter == jobDescriptions.end())
-                jobDescriptions.push_back(description);
-
-            // Same operations for unordered_map with custom hash
-            auto &hashJobDescriptions = myHashMap[currentJob];
-            auto hashIter = find(hashJobDescriptions.begin(), hashJobDescriptions.end(), description);
-            if (hashIter == hashJobDescriptions.end())
-                hashJobDescriptions.push_back(description);
-
-            ++newJobs;
+                //check for duplicates
+                vector<string> currentListOfDescription = getJobDescription(currentJob);
+                auto iter = find(currentListOfDescription.begin(), currentListOfDescription.end(), description);
+                if (iter == currentListOfDescription.end()) {
+                    myMap[currentJob].push_back(description);
+                    //cout << description << endl;
+                }
+            }
         }
-    } else {
+    }
+    else {
         cout << "Error: Couldn't open file." << endl;
     }
 }
@@ -94,7 +117,7 @@ int main() {
         auto start = high_resolution_clock::now();
 
         ifstream inFile("C://Users//Ian//Downloads//job_skills.csv//job_skills.csv");
-        LoadFileToMap(inFile);
+        LoadFileToHash(inFile);
 
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(stop - start);
@@ -122,7 +145,7 @@ int main() {
         auto start = high_resolution_clock::now();
 
         ifstream inFile("C://Users//Ian//Downloads//job_skills.csv//job_skills.csv");
-        LoadFileToMap(inFile); // Loading to unordered_map instead
+        LoadFileToHash(inFile); // Loading to unordered_map instead
 
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(stop - start);
