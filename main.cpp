@@ -2,108 +2,86 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <chrono>
 #include <iterator>
 #include <cctype>
-#include<bits/stdc++.h>
+#include <algorithm> // Added for transform
+
 using namespace std;
 using namespace chrono;
 
-
-//tuples from: https://www.kaggle.com/datasets/asaniczka/1-3m-linkedin-jobs-and-skills-2024?resource=download
-
-//Map
+// Maps
 map<string, vector<string>> myMap;
-void LoadFileToMap(ifstream &inFile);
-vector<string> getJobDescription(string &jobName);
+unordered_map<string, vector<string>> myHashMap; // Added unordered_map
+
+// Custom hash function using polynomial rolling hash
+size_t customHash(const string &s) {
+    const int p = 31; // Prime number for hashing
+    const int m = 1e9 + 9; // Large prime number for modulo
+    size_t hashValue = 0;
+    size_t pPow = 1;
+    for (char c : s) {
+        hashValue = (hashValue + (c - 'a' + 1) * pPow) % m;
+        pPow = (pPow * p) % m;
+    }
+    return hashValue;
+}
 
 void LoadFileToMap(ifstream &inFile) {
     if (inFile.is_open()) {
-        //Gets rid of the header lines
         string header1, header2;
         getline(inFile, header1, ',');
         getline(inFile, header2, ',');
-        //cout << "Header1: " << header1 << endl;
-        //cout << "Header2: " << header2 << endl;
 
-
-        //Counts up newJobs to 100,000 in the file to make sure it gets all the tuples
         int newJobs = 0;
         string currentJob;
-        //while (newJobs < 20) {
-        while (newJobs < 100000) {
-            //get the word
+
+        while (newJobs < 100000 && getline(inFile, currentJob, ',')) {
+            transform(currentJob.begin(), currentJob.end(), currentJob.begin(), ::tolower);
+
+            if (currentJob.front() == '\"')
+                currentJob = currentJob.substr(1); // remove opening quote
+
+            auto &jobDescriptions = myMap[currentJob]; // Using myMap for now
+
             string description;
             getline(inFile, description, ',');
-            //turn all words lowercase: https://www.geeksforgeeks.org/conversion-whole-string-uppercase-lowercase-using-stl-c/
             transform(description.begin(), description.end(), description.begin(), ::tolower);
 
-            //If there is " at the begining, we know that it is the first in the tuple, meaning it is the Job title
-            if (description.find('\"') == 0) {
-                //cout << "[NEW JOB]" << endl;
-                currentJob = description.substr(1, description.size());
-                newJobs++;
-                vector<string> tempVec;
-                myMap[currentJob] = tempVec;
-                description = description.substr(1, description.size());
-                //cout << description << endl;
-            }
-                // if there is a " but it isn't in the first position that means it is the last descpiptor of the job
-            else if (description.find('\"') != -1 && description.find('\"') != 0) {
-                //cout << "[END OF JOB POSTING FOUND, WEBSITE RIGHT AFTER]" << endl;
-                int test = description.find("\"");
-                description = description.substr(0,test);
-                description = description.substr(1, description.size());
-                //check for duplicates
-                vector<string> currentListOfDescription = getJobDescription(currentJob);
-                auto iter = find(currentListOfDescription.begin(), currentListOfDescription.end(), description);
-                if (iter == currentListOfDescription.end()) {
-                    myMap[currentJob].push_back(description);
-                    //cout << description << endl;
-                }
-            }
-                //else we just put in the word, eliminating the space in front of it, checking to make sure it isn't already there
-            else {
-                description = description.substr(1, description.size());
+            if (description.back() == '\"')
+                description.pop_back(); // remove closing quote
 
-                //check for duplicates
-                vector<string> currentListOfDescription = getJobDescription(currentJob);
-                auto iter = find(currentListOfDescription.begin(), currentListOfDescription.end(), description);
-                if (iter == currentListOfDescription.end()) {
-                    myMap[currentJob].push_back(description);
-                    //cout << description << endl;
-                }
-            }
+            auto iter = find(jobDescriptions.begin(), jobDescriptions.end(), description);
+            if (iter == jobDescriptions.end())
+                jobDescriptions.push_back(description);
+
+            // Same operations for unordered_map with custom hash
+            auto &hashJobDescriptions = myHashMap[currentJob];
+            auto hashIter = find(hashJobDescriptions.begin(), hashJobDescriptions.end(), description);
+            if (hashIter == hashJobDescriptions.end())
+                hashJobDescriptions.push_back(description);
+
+            ++newJobs;
         }
-        //Here you can see how many are in the set, and see how many duplicate job links there were.
-        //cout << "Number of Jobs in this set: " << newJobs << endl;
-        //cout << "Number of Jobs in Map: " << myMap.size() << endl;
-        /*
-         * Printing out Job listings:
-        map<string, vector<string>>::iterator iter;
-        for (iter = myMap.begin(); iter != myMap.end(); iter++) {
-            cout << iter->first << ": ";
-            for (string s: iter->second) {
-                cout << s << ",";
-            }
-            cout << endl;
-        }
-         */
-    }
-    else {
-        cout << "file not open";
+    } else {
+        cout << "Error: Couldn't open file." << endl;
     }
 }
 
-//returns the vectors that correspond with the name in the Map
-vector<string> getJobDescription(string &jobName) {
-    if (myMap.find(jobName) != myMap.end()) {
+vector<string> getJobDescription(const string &jobName) {
+    if (myMap.find(jobName) != myMap.end())
         return myMap[jobName];
-    }
-    else {
+    else
         return {};
-    }
+}
+
+vector<string> getJobDescriptionFromHash(const string &jobName) {
+    if (myHashMap.find(jobName) != myHashMap.end())
+        return myHashMap[jobName];
+    else
+        return {};
 }
 
 int main() {
@@ -112,42 +90,63 @@ int main() {
     cin >> answer;
 
     if (answer == "m") {
-        cout << "Retrieving Job Listings..." << endl;
+        cout << "Retrieving Job Listings using Maps..." << endl;
         auto start = high_resolution_clock::now();
-        //find the file and open
-        ifstream inFile("src/job_skills.csv");
-        //load into the map
+
+        ifstream inFile("C://Users//Ian//Downloads//job_skills.csv//job_skills.csv");
         LoadFileToMap(inFile);
 
-        //stop clock and report time
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(stop - start);
         cout << "Time to put into map: " << duration.count() << " microseconds" << endl;
-        //reset cin so we can use it again
+
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-        //ask for name of job
         cout << "Please type in a job name to see its description: " << endl;
         string jobName;
-        getline(std::cin, jobName);
-        transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower);
+        getline(cin, jobName);
+        transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower); // Added transform here
 
-        //get corresponding vector and return, printing out the vector if it has items
         cout << "Job requirements/benefits for " << jobName << ":" << endl;
         vector<string> jobRequirementsBenefits = getJobDescription(jobName);
         if (!jobRequirementsBenefits.empty()) {
-            for (int i = 0; i < jobRequirementsBenefits.size(); i++) {
+            for (size_t i = 0; i < jobRequirementsBenefits.size() - 1; ++i)
                 cout << jobRequirementsBenefits[i] << ", ";
-            }
-            cout << jobRequirementsBenefits[jobRequirementsBenefits.size() - 1];
-            cout << endl;
+            cout << jobRequirementsBenefits.back() << endl;
         } else {
-            cout << "not found" << endl;
+            cout << "Not found" << endl;
         }
+    }
+    else if (answer == "h") {
+        cout << "Retrieving Job Listings using Hashmaps..." << endl;
+        auto start = high_resolution_clock::now();
 
+        ifstream inFile("C://Users//Ian//Downloads//job_skills.csv//job_skills.csv");
+        LoadFileToMap(inFile); // Loading to unordered_map instead
+
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(stop - start);
+        cout << "Time to put into hashmap: " << duration.count() << " microseconds" << endl;
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        cout << "Please type in a job name to see its description: " << endl;
+        string jobName;
+        getline(cin, jobName);
+        transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower); // Added transform here
+
+        cout << "Job requirements/benefits for " << jobName << ":" << endl;
+        vector<string> jobRequirementsBenefits = getJobDescriptionFromHash(jobName); // Using getJobDescriptionFromHash
+        if (!jobRequirementsBenefits.empty()) {
+            for (int i = 0; i < jobRequirementsBenefits.size() - 1; i++)
+                cout << jobRequirementsBenefits[i] << ", ";
+            cout << jobRequirementsBenefits.back() << endl;
+        } else {
+            cout << "Not found" << endl;
+        }
     }
     else {
-
+        cout << "Invalid choice!" << endl;
     }
 
     return 0;
