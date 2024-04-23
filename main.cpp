@@ -296,8 +296,8 @@ int main() {
     cin >> answer;
 
     if (answer == "m") {
-        cout << "Would you like to search jobs or search skills(j/s)?" << endl;
-        cin >> answer;
+        //cout << "Would you like to search jobs or search skills(j/s)?" << endl;
+        answer = "j";
         if (answer == "j") {
             cout << "Retrieving Job Listings..." << endl;
             auto start = high_resolution_clock::now();
@@ -313,24 +313,31 @@ int main() {
             //reset cin so we can use it again
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-            //ask for name of job
-            cout << "Please type in a job name to see its description: " << endl;
-            string jobName;
-            getline(cin, jobName);
-            transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower);
+            bool going = true;
+            while (going) {
+                //ask for name of job
+                cout << "Please type in a job name to see its description(q to quit): " << endl;
+                string jobName;
+                getline(cin, jobName);
+                transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower);
 
-            //get corresponding vector and return, printing out the vector if it has items
-            cout << "Job requirements/benefits for " << jobName << ":" << endl;
-            vector<string> jobRequirementsBenefits = getJobDescription(jobName);
-            if (!jobRequirementsBenefits.empty()) {
-                for (int i = 0; i < jobRequirementsBenefits.size(); i++) {
-                    cout << jobRequirementsBenefits[i] << ", ";
+                if (jobName != "q") {
+                    //get corresponding vector and return, printing out the vector if it has items
+                    cout << "Job requirements/benefits for " << jobName << ":" << endl;
+                    vector<string> jobRequirementsBenefits = getJobDescription(jobName);
+                    if (!jobRequirementsBenefits.empty()) {
+                        for (int i = 0; i < jobRequirementsBenefits.size(); i++) {
+                            cout << jobRequirementsBenefits[i] << ", ";
+                        }
+                        cout << jobRequirementsBenefits[jobRequirementsBenefits.size() - 1];
+                        cout << endl;
+                    } else {
+                        cout << "not found" << endl;
+                    }
                 }
-                cout << jobRequirementsBenefits[jobRequirementsBenefits.size() - 1];
-                cout << endl;
-            }
-            else {
-                cout << "not found" << endl;
+                else {
+                    going = false;
+                }
             }
         }
         else {
@@ -339,6 +346,7 @@ int main() {
             ifstream inFile("src/job_skills.csv");
             //load into the map
             LoadFileToMapOpposite(inFile);
+
 
             //get user skills
             cout << "Please enter you skills(separate by commas):" << endl;
@@ -361,6 +369,29 @@ int main() {
                 userSkills = userSkills.substr(found+1, userSkills.size());
                 found = userSkills.find(',');
             }
+
+
+            if (myMap.find("housekeeping") != myMap.end()) {
+                cout << "it's in there" << endl;
+            }
+            /*
+            vector<string> listOfPossibleJobs;
+            for (string skill: vectorOfSkills){
+                if (myMap.find(skill) != myMap.end()) {
+                    vector<string> tempJobs = myMap[skill];
+                    for (string job: tempJobs) {
+                        auto iter = find(listOfPossibleJobs.begin(), listOfPossibleJobs.end(), job);
+                        if (iter == listOfPossibleJobs.end()) {
+                            listOfPossibleJobs.push_back(job);
+                        }
+                    }
+                }
+            }
+            cout << "\nPossible Job choices: " << endl;
+            for (int i = 0; i < listOfPossibleJobs.size()-1; i++) {
+                cout << listOfPossibleJobs[i];
+            }
+            cout << listOfPossibleJobs[listOfPossibleJobs.size()];
             /*
              * print out vector of skills
             vectorOfSkills.push_back(userSkills);
@@ -375,7 +406,6 @@ int main() {
             /*
              * now that the skills are loaded, go through all the map and find jobs with those skillsets
              * the next round only go through the jobs on the list, unless there aren't any in the list, then go through the map again
-
             map<string, vector<string>>::iterator iter;
             vector<string> listOfPossibleJobs;
             for (auto i = myMap.begin(); i != myMap.end(); i++) {
@@ -395,7 +425,7 @@ int main() {
             else {
                 cout << "no list of jobs" << endl;
             }
-             */
+            */
         }
 
     }
@@ -412,19 +442,28 @@ int main() {
 
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-        cout << "Please type in a job name to see its description: " << endl;
-        string jobName;
-        getline(cin, jobName);
-        transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower); // Added transform here
+        bool going = true;
+        while (going) {
+            cout << "Please type in a job name to see its description: " << endl;
+            string jobName;
+            getline(cin, jobName);
+            transform(jobName.begin(), jobName.end(), jobName.begin(), ::tolower); // Added transform here
 
-        cout << "Job requirements/benefits for " << jobName << ":" << endl;
-        vector<string> jobRequirementsBenefits = getJobDescriptionFromHash(jobName); // Using getJobDescriptionFromHash
-        if (!jobRequirementsBenefits.empty()) {
-            for (int i = 0; i < jobRequirementsBenefits.size() - 1; i++)
-                cout << jobRequirementsBenefits[i] << ", ";
-            cout << jobRequirementsBenefits.back() << endl;
-        } else {
-            cout << "Not found" << endl;
+            if (jobName != "q") {
+                cout << "Job requirements/benefits for " << jobName << ":" << endl;
+                vector<string> jobRequirementsBenefits = getJobDescriptionFromHash(
+                        jobName); // Using getJobDescriptionFromHash
+                if (!jobRequirementsBenefits.empty()) {
+                    for (int i = 0; i < jobRequirementsBenefits.size() - 1; i++)
+                        cout << jobRequirementsBenefits[i] << ", ";
+                    cout << jobRequirementsBenefits.back() << endl;
+                } else {
+                    cout << "Not found" << endl;
+                }
+            }
+            else {
+                going = false;
+            }
         }
     }
     else {
